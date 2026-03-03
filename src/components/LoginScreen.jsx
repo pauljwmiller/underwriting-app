@@ -1,17 +1,45 @@
 // src/components/LoginScreen.jsx
 
 import { useState } from 'react'
+import { supabase } from '../lib/supabase'
 
 export default function LoginScreen({ onSignIn, error }) {
-  const [email, setEmail]       = useState('')
-  const [password, setPassword] = useState('')
-  const [loading, setLoading]   = useState(false)
+  const [email, setEmail]         = useState('')
+  const [password, setPassword]   = useState('')
+  const [loading, setLoading]     = useState(false)
+  const [resetLoading, setResetLoading] = useState(false)
+  const [resetMessage, setResetMessage] = useState(null)
+  const [resetError, setResetError]     = useState(null)
 
   const handleSubmit = async () => {
     if (!email || !password) return
     setLoading(true)
     await onSignIn(email, password)
     setLoading(false)
+  }
+
+  const handleResetPassword = async () => {
+    if (!email) {
+      setResetError('Enter your email above to request a reset link.')
+      setResetMessage(null)
+      return
+    }
+
+    setResetLoading(true)
+    setResetError(null)
+    setResetMessage(null)
+
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${window.location.origin}/reset-password`,
+    })
+
+    if (error) {
+      setResetError(error.message)
+    } else {
+      setResetMessage('If an account exists for this email, a reset link has been sent.')
+    }
+
+    setResetLoading(false)
   }
 
   return (
@@ -49,6 +77,26 @@ export default function LoginScreen({ onSignIn, error }) {
             color: '#f85149', fontSize: 12
           }}>
             {error}
+          </div>
+        )}
+
+        {resetError && (
+          <div style={{
+            background: '#f8514922', border: '1px solid #f85149',
+            borderRadius: 6, padding: '8px 12px', marginBottom: 16,
+            color: '#f85149', fontSize: 12
+          }}>
+            {resetError}
+          </div>
+        )}
+
+        {resetMessage && (
+          <div style={{
+            background: '#23863622', border: '1px solid #238636',
+            borderRadius: 6, padding: '8px 12px', marginBottom: 16,
+            color: '#3fb950', fontSize: 12
+          }}>
+            {resetMessage}
           </div>
         )}
 
@@ -92,9 +140,20 @@ export default function LoginScreen({ onSignIn, error }) {
           {loading ? 'Signing in…' : 'Sign In →'}
         </button>
 
-        <p style={{ marginTop: 20, fontSize: 11, color: '#556070', textAlign: 'center' }}>
-          Contact your administrator to reset your password or request access.
-        </p>
+        <div style={{ marginTop: 16, fontSize: 11, color: '#556070', textAlign: 'center' }}>
+          <button
+            type="button"
+            onClick={handleResetPassword}
+            disabled={resetLoading}
+            style={{
+              background: 'transparent', border: 'none', padding: 0,
+              color: '#cdd5e0', textDecoration: 'underline', cursor: 'pointer',
+              fontSize: 11
+            }}
+          >
+            {resetLoading ? 'Sending reset link…' : 'Forgot password? Email me a reset link'}
+          </button>
+        </div>
       </div>
     </div>
   )
