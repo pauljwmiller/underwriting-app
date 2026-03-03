@@ -122,7 +122,8 @@ export function calcAgencyIncome(borrower) {
   // Add-backs: depreciation, home office, business mileage dep component, meals (50%)
   // Source: https://selling-guide.fanniemae.com/sel/b3-3.2/self-employment-income
   const fnmaIncome = isDecline ? lowerYear : twoYearAvg
-  const fnmaMonthly = fnmaIncome / 24
+  // fnmaIncome is an annual qualifying income figure; convert to monthly on a 12-month basis
+  const fnmaMonthly = fnmaIncome / 12
   const fnmaFlag = isSharpDecline ? 'SHARP_DECLINE'
     : isDecline ? 'DECLINING'
     : null
@@ -134,7 +135,8 @@ export function calcAgencyIncome(borrower) {
   // recovering) year rather than the lowest point.
   // Source: https://guide.freddiemac.com/app/guide/section/5304.1
   const fhlmcIncome = isDecline ? mostRecent : twoYearAvg
-  const fhlmcMonthly = fhlmcIncome / 24
+  // Freddie uses a similar annual figure but with different declining-income rules; still converted over 12 months
+  const fhlmcMonthly = fhlmcIncome / 12
   const fhlmcFlag = isDecline ? 'DECLINING_USE_RECENT' : null
 
   // ── FHA / HUD 4000.1 ──
@@ -155,7 +157,7 @@ export function calcAgencyIncome(borrower) {
     fhaIncome = isDecline ? Math.min(fha1, fha2) : (fha1 + fha2) / 2
     fhaFlag = isDecline ? 'DECLINING' : null
   }
-  const fhaMonthly = fhaIncome != null ? fhaIncome / 24 : null
+  const fhaMonthly = fhaIncome != null ? fhaIncome / 12 : null
 
   // ── VA Lender's Handbook Chapter 4 ──
   // More flexible than GSEs in some ways:
@@ -176,7 +178,7 @@ export function calcAgencyIncome(borrower) {
   const vaIncome = hasBothYears
     ? (isDecline ? Math.min(va1, va2) : (va1 + va2) / 2)
     : va2 || va1
-  const vaMonthly = vaIncome / 24
+  const vaMonthly = vaIncome / 12
   const vaFlag = !hasBothYears ? 'ONE_YEAR_ONLY'
     : isDecline ? 'DECLINING'
     : null
@@ -191,28 +193,28 @@ export function calcAgencyIncome(borrower) {
     agencies: {
       FNMA: {
         label:   'Fannie Mae',
-        annual:  fnmaIncome,
+        annual:  fnmaMonthly * 12,
         monthly: fnmaMonthly,
         flag:    fnmaFlag,
         eligible: true,
       },
       FHLMC: {
         label:   'Freddie Mac',
-        annual:  fhlmcIncome,
+        annual:  fhlmcMonthly * 12,
         monthly: fhlmcMonthly,
         flag:    fhlmcFlag,
         eligible: true,
       },
       FHA: {
         label:   'FHA / HUD',
-        annual:  fhaIncome,
+        annual:  fhaMonthly * 12,
         monthly: fhaMonthly,
         flag:    fhaFlag,
         eligible: fhaIncome != null,
       },
       VA: {
         label:   'VA',
-        annual:  vaIncome,
+        annual:  vaMonthly * 12,
         monthly: vaMonthly,
         flag:    vaFlag,
         eligible: true,
